@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Scratch & Win!</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Arial',sans-serif;
+  min-height:100vh;
+  background:#0a0005;
+  overflow-x:hidden;
+  position:relative;
+  -webkit-user-select:none;user-select:none;
+}
+.bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse at 30% 20%,rgba(255,180,0,.35) 0%,transparent 55%),
+    radial-gradient(ellipse at 70% 80%,rgba(255,90,0,.3) 0%,transparent 55%),
+    radial-gradient(ellipse at 50% 50%,rgba(180,30,0,.2) 0%,transparent 70%),
+    linear-gradient(135deg,#1a0500 0%,#0d0002 50%,#1a0800 100%);
+}
+.aurora{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+.aurora::before{
+  content:'';position:absolute;width:200%;height:200%;top:-50%;left:-50%;
+  background:conic-gradient(from 0deg at 50% 50%,
+    transparent 0deg,rgba(255,200,0,.15) 40deg,rgba(255,120,0,.2) 80deg,
+    transparent 120deg,rgba(255,60,0,.1) 200deg,rgba(255,200,0,.15) 260deg,transparent 360deg);
+  animation:spin 18s linear infinite;
+}
+.aurora::after{
+  content:'';position:absolute;width:200%;height:200%;top:-50%;left:-50%;
+  background:conic-gradient(from 180deg at 40% 60%,
+    transparent 0deg,rgba(255,160,0,.12) 60deg,transparent 120deg,rgba(255,80,0,.1) 240deg,transparent 300deg);
+  animation:spin 26s linear infinite reverse;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.particles{position:fixed;inset:0;z-index:2;pointer-events:none;}
+.p{position:absolute;border-radius:50%;background:radial-gradient(circle,rgba(255,200,0,.9),transparent);animation:pFloat linear infinite;}
+@keyframes pFloat{0%{transform:translateY(100vh);opacity:0;}10%{opacity:1;}90%{opacity:.7;}100%{transform:translateY(-20px) translateX(30px);opacity:0;}}
+
+.wrap{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:30px 20px;}
+
+.header{text-align:center;margin-bottom:24px;animation:fadeD .8s ease-out;}
+@keyframes fadeD{from{opacity:0;transform:translateY(-20px);}to{opacity:1;transform:translateY(0);}}
+.coins{display:flex;justify-content:center;gap:8px;margin-bottom:10px;}
+.coin{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe066,#cc8800);box-shadow:0 0 10px rgba(255,180,0,.6);animation:cb 1.5s ease-in-out infinite;}
+.coin:nth-child(2){animation-delay:.2s;}.coin:nth-child(3){animation-delay:.4s;}.coin:nth-child(4){animation-delay:.6s;}.coin:nth-child(5){animation-delay:.8s;}
+@keyframes cb{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.header h1{
+  font-size:clamp(2rem,7vw,3.2rem);font-weight:900;letter-spacing:2px;
+  background:linear-gradient(135deg,#ffe066 0%,#ffaa00 40%,#ff6600 70%,#ff3300 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(255,160,0,.6));
+}
+.header p{color:#ffd080;font-size:1rem;margin-top:6px;text-shadow:0 0 15px rgba(255,160,0,.5);}
+
+.card-wrap{
+  position:relative;width:min(320px,82vw);aspect-ratio:1;
+  margin-bottom:28px;
+  animation:fadeD .8s .2s ease-out both;
+}
+.card-inner{
+  width:100%;height:100%;border-radius:20px;overflow:hidden;
+  border:2px solid rgba(255,160,0,.5);
+  box-shadow:0 10px 40px rgba(0,0,0,.6),0 0 30px rgba(255,120,0,.25);
+  position:relative;
+}
+.prize-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#1a0800,#2d1000);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:1;
+}
+.prize-icon-big{font-size:3.5rem;margin-bottom:8px;}
+.prize-text{
+  font-size:clamp(1.4rem,5vw,2rem);font-weight:900;
+  background:linear-gradient(135deg,#ffe066,#ffaa00,#ff6600);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 12px rgba(255,180,0,.9));
+}
+canvas#cvs{position:absolute;inset:0;z-index:2;width:100%;height:100%;display:block;}
+
+.cursor-ind{
+  position:absolute;width:56px;height:56px;border-radius:50%;
+  border:3px solid rgba(255,220,0,.95);
+  box-shadow:0 0 18px rgba(255,180,0,.8);
+  pointer-events:none;z-index:10;
+  display:none;transform:translate(-50%,-50%);
+  transition:left .05s linear, top .05s linear;
+}
+
+.status{color:#ffd080;font-size:1rem;text-align:center;margin-bottom:20px;min-height:22px;text-shadow:0 0 10px rgba(255,160,0,.5);}
+
+.btn-gosok{
+  padding:18px 52px;font-size:1.25rem;font-weight:900;
+  background:linear-gradient(to bottom,#ffcc00 0%,#ff9900 50%,#ff6600 100%);
+  color:#fff;border:none;border-radius:50px;cursor:pointer;
+  box-shadow:0 7px 0 #aa3300,0 12px 25px rgba(0,0,0,.5),0 0 40px rgba(255,140,0,.4);
+  transition:all .1s;
+  animation:bPulse 2s ease-in-out infinite;
+  text-shadow:0 1px 3px rgba(0,0,0,.4);
+}
+.btn-gosok:active{transform:translateY(5px);box-shadow:0 2px 0 #aa3300,0 5px 10px rgba(0,0,0,.4);animation:none;}
+.btn-gosok:disabled{opacity:.5;cursor:not-allowed;animation:none;filter:grayscale(.5);}
+@keyframes bPulse{
+  0%,100%{box-shadow:0 7px 0 #aa3300,0 12px 25px rgba(0,0,0,.5),0 0 40px rgba(255,140,0,.4);transform:translateY(0);}
+  50%{box-shadow:0 7px 0 #aa3300,0 12px 25px rgba(0,0,0,.5),0 0 65px rgba(255,140,0,.7);transform:translateY(-3px);}
+}
+
+.already{
+  display:none;
+  background:rgba(255,60,0,.15);border:1px solid rgba(255,100,0,.4);
+  border-radius:16px;padding:18px 28px;text-align:center;
+  color:#ffaa80;font-size:1rem;margin-top:10px;
+  max-width:320px;line-height:1.6;
+}
+
+.mo{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .35s;
+}
+.mo.on{opacity:1;pointer-events:all;}
+.mbox{
+  background:linear-gradient(135deg,rgba(50,15,0,.97),rgba(30,8,0,.97));
+  border:2px solid rgba(255,160,0,.55);border-radius:28px;
+  padding:44px 36px;text-align:center;max-width:400px;width:90%;
+  box-shadow:0 0 70px rgba(255,120,0,.45),0 0 130px rgba(255,60,0,.2),inset 0 1px 0 rgba(255,200,0,.2);
+  transform:scale(.75);transition:transform .45s cubic-bezier(.34,1.56,.64,1);
+  position:relative;overflow:hidden;
+}
+.mo.on .mbox{transform:scale(1);}
+.mbox::before{
+  content:'';position:absolute;inset:0;
+  background:conic-gradient(from 0deg,transparent 0%,rgba(255,160,0,.05) 25%,transparent 50%,rgba(255,80,0,.05) 75%,transparent 100%);
+  animation:spin 8s linear infinite;
+}
+.moji{font-size:4rem;display:block;margin-bottom:6px;animation:mJump 1s ease-in-out infinite;}
+@keyframes mJump{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-12px) scale(1.12);}}
+.mtitle{font-size:2rem;font-weight:900;margin-bottom:8px;background:linear-gradient(135deg,#ffe066,#ff6600);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative;z-index:1;}
+.msub{color:#ffd080;font-size:.95rem;margin-bottom:4px;position:relative;z-index:1;}
+.mamount{font-size:3rem;font-weight:900;margin:10px 0 6px;background:linear-gradient(135deg,#ffe066 0%,#ffaa00 50%,#ff6600 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 22px rgba(255,180,0,.9));position:relative;z-index:1;animation:mGlow 1.5s ease-in-out infinite;}
+@keyframes mGlow{0%,100%{filter:drop-shadow(0 0 20px rgba(255,180,0,.8));}50%{filter:drop-shadow(0 0 42px rgba(255,180,0,1));}}
+.mnote{color:rgba(255,200,120,.8);font-size:.88rem;margin-bottom:26px;position:relative;z-index:1;}
+.bclaim{display:inline-block;padding:17px 46px;font-size:1.2rem;font-weight:900;color:#fff;text-decoration:none;background:linear-gradient(to bottom,#55dd88 0%,#22aa55 50%,#117733 100%);border:none;border-radius:50px;cursor:pointer;box-shadow:0 6px 0 #0a5522,0 10px 25px rgba(0,0,0,.5),0 0 40px rgba(30,180,80,.4);position:relative;z-index:1;animation:cPulse 2s ease-in-out infinite;}
+.bclaim:hover{filter:brightness(1.1);}
+@keyframes cPulse{0%,100%{box-shadow:0 6px 0 #0a5522,0 10px 25px rgba(0,0,0,.5),0 0 40px rgba(30,180,80,.4);}50%{box-shadow:0 6px 0 #0a5522,0 10px 25px rgba(0,0,0,.5),0 0 65px rgba(30,180,80,.7);}}
+
+.cfw{position:fixed;inset:0;z-index:999;pointer-events:none;overflow:hidden;}
+.cf{position:absolute;top:-10px;opacity:0;animation:cfFall 3s ease-out forwards;}
+@keyframes cfFall{0%{transform:translateY(0) rotate(0deg);opacity:1;}100%{transform:translateY(100vh) rotate(720deg);opacity:0;}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="aurora"></div>
+<div class="particles" id="pts"></div>
+
+<div class="wrap">
+  <div class="header">
+    <div class="coins"><div class="coin"></div><div class="coin"></div><div class="coin"></div><div class="coin"></div><div class="coin"></div></div>
+    <h1>SCRATCH &amp; WIN!</h1>
+    <p>Tekan tombol gosok dan menangkan hadiahmu!</p>
+  </div>
+
+  <div class="card-wrap" id="cardWrap">
+    <div class="card-inner">
+      <div class="prize-bg">
+        <div class="prize-icon-big" id="prizeIcon">❓</div>
+        <div class="prize-text" id="prizeText">???</div>
+      </div>
+      <canvas id="cvs"></canvas>
+    </div>
+    <div class="cursor-ind" id="cursorInd"></div>
+  </div>
+
+  <div class="status" id="status">Tekan tombol di bawah untuk mulai menggosok!</div>
+  <button class="btn-gosok" id="btnGosok">✨ GOSOK SEKARANG ✨</button>
+  <div class="already" id="alreadyMsg">⛔ Kamu sudah pernah bermain.<br>Setiap perangkat hanya bisa 1x gosok.</div>
+</div>
+
+<div class="mo" id="modal">
+  <div class="mbox">
+    <span class="moji" id="moji">🎉</span>
+    <div class="mtitle">SELAMAT!</div>
+    <div class="msub">Anda mendapatkan hadiah sebesar</div>
+    <div class="mamount" id="mAmount">Rp 1.000.000</div>
+    <div class="mnote">Silahkan claim ke admin kami</div>
+    <a href="#" class="bclaim" id="btnClaim" target="_blank">💎 CLAIM SEKARANG</a>
+  </div>
+</div>
+
+<div class="cfw" id="cfWrap"></div>
+
+<script>
+/* ---- ANTI-INSPECT ---- */
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',function(e){
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&/^[ijcIJC]$/.test(e.key))||(e.ctrlKey&&/^[uUsS]$/.test(e.key))){
+    e.preventDefault();return false;
+  }
+});
+(function devCheck(){
+  const t=160;
+  setInterval(()=>{
+    if(window.outerWidth-window.innerWidth>t||window.outerHeight-window.innerHeight>t){
+      document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0a0005;color:#ff6600;font-family:Arial;text-align:center;padding:20px;"><div><div style="font-size:3rem;margin-bottom:12px;">⛔</div><h2 style="margin-bottom:8px;">Akses Ditolak</h2><p style="color:#ffd080;font-size:.9rem;">DevTools terdeteksi. Tutup untuk melanjutkan.</p></div></div>';
+    }
+  },800);
+})();
+
+/* ---- CONFIG ---- */
+const CLAIM_URL = 'https://wa.me/6281234567890'; // GANTI LINK DI SINI
+
+const PRIZES = [
+  {label:'250.000',  display:'Rp 250.000',   icon:'💵', w:40},
+  {label:'500.000',  display:'Rp 500.000',   icon:'💴', w:35},
+  {label:'1.000.000',display:'Rp 1.000.000', icon:'💰', w:18},
+  {label:'2.000.000',display:'Rp 2.000.000', icon:'🤑', w:7},
+];
+
+/* ---- STORAGE ---- */
+const KS = btoa('_sw_done');
+const KC = btoa('_sw_ts');
+
+function hasPlayed(){
+  try{
+    if(document.cookie.split(';').some(c=>c.trim().startsWith('_swp=1'))) return true;
+    const v=localStorage.getItem(KS);
+    return v && atob(v)==='y';
+  }catch(e){return false;}
+}
+function markPlayed(){
+  try{
+    localStorage.setItem(KS,btoa('y'));
+    localStorage.setItem(KC,btoa(''+Date.now()));
+    document.cookie='_swp=1;max-age=31536000;path=/';
+  }catch(e){}
+}
+
+/* ---- PRIZE PICK ---- */
+function pickPrize(){
+  const tot=PRIZES.reduce((s,p)=>s+p.w,0);
+  let r=Math.random()*tot;
+  for(const p of PRIZES){r-=p.w;if(r<=0)return p;}
+  return PRIZES[0];
+}
+
+/* ---- CANVAS ---- */
+const cvs=document.getElementById('cvs');
+const ctx=cvs.getContext('2d');
+const SZ=600;
+
+function setupCanvas(){
+  const w=document.getElementById('cardWrap').offsetWidth;
+  cvs.width=SZ;cvs.height=SZ;
+  cvs.style.width=w+'px';cvs.style.height=w+'px';
+  drawCover();
+}
+
+function drawCover(){
+  const g=ctx.createLinearGradient(0,0,SZ,SZ);
+  g.addColorStop(0,'#8b6914');g.addColorStop(.15,'#b8860b');g.addColorStop(.3,'#daa520');
+  g.addColorStop(.45,'#ffd700');g.addColorStop(.55,'#ffec6e');
+  g.addColorStop(.7,'#daa520');g.addColorStop(.85,'#b8860b');g.addColorStop(1,'#8b6914');
+  ctx.fillStyle=g;ctx.fillRect(0,0,SZ,SZ);
+
+  ctx.strokeStyle='rgba(0,0,0,.1)';ctx.lineWidth=1.5;
+  for(let x=0;x<SZ;x+=25){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,SZ);ctx.stroke();}
+  for(let y=0;y<SZ;y+=25){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(SZ,y);ctx.stroke();}
+
+  const shine=ctx.createLinearGradient(0,0,SZ,SZ);
+  shine.addColorStop(0,'rgba(255,255,255,.3)');shine.addColorStop(.5,'rgba(255,255,255,0)');shine.addColorStop(1,'rgba(255,255,255,.12)');
+  ctx.fillStyle=shine;ctx.fillRect(0,0,SZ,SZ);
+
+  ctx.save();
+  ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=10;
+  ctx.fillStyle='rgba(0,0,0,.38)';
+  ctx.font=`bold ${SZ*.11}px Arial`;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('GOSOK DI SINI!',SZ/2,SZ*.36);
+  ctx.font=`${SZ*.075}px Arial`;
+  ctx.fillText('✦  ✦  ✦  ✦  ✦',SZ/2,SZ*.54);
+  ctx.fillStyle='rgba(0,0,0,.22)';
+  ctx.font=`${SZ*.05}px Arial`;
+  ctx.fillText('Tekan tombol GOSOK',SZ/2,SZ*.7);
+  ctx.restore();
+}
+
+/* ---- ANIMATE SCRATCH ---- */
+let scratching=false;
+
+function buildPaths(){
+  const paths=[];
+  const rows=8;
+  for(let r=0;r<rows;r++){
+    const y=SZ/(rows+1)*(r+1);
+    const pts=[];
+    const cols=24;
+    for(let c=0;c<=cols;c++){
+      const x=(SZ/cols)*c+(Math.random()-.5)*18;
+      const jy=y+(Math.random()-.5)*28;
+      pts.push({x:Math.max(15,Math.min(SZ-15,x)),y:Math.max(15,Math.min(SZ-15,jy))});
+    }
+    if(r%2===1) pts.reverse();
+    paths.push(pts);
+  }
+  return paths;
+}
+
+function animateScratch(onDone){
+  scratching=true;
+  const ind=document.getElementById('cursorInd');
+  ind.style.display='block';
+  ctx.globalCompositeOperation='destination-out';
+
+  const scaleX=cvs.offsetWidth/SZ;
+  const scaleY=cvs.offsetHeight/SZ;
+  const paths=buildPaths();
+  let pi=0,pj=0;
+
+  function step(){
+    if(pi>=paths.length){
+      ctx.fillRect(0,0,SZ,SZ);
+      ind.style.display='none';
+      scratching=false;
+      setTimeout(onDone,350);
+      return;
+    }
+    const path=paths[pi];
+    if(pj>=path.length){pi++;pj=0;setTimeout(step,55);return;}
+
+    const pt=path[pj];
+    ctx.beginPath();ctx.arc(pt.x,pt.y,58,0,Math.PI*2);ctx.fill();
+
+    ind.style.left=(pt.x*scaleX)+'px';
+    ind.style.top=(pt.y*scaleY)+'px';
+
+    pj++;
+    setTimeout(step,7);
+  }
+  step();
+}
+
+/* ---- MAIN ---- */
+let prize=null;
+
+function init(){
+  setupCanvas();
+  if(hasPlayed()){showAlreadyPlayed();return;}
+  prize=pickPrize();
+  // store encoded in session only
+  sessionStorage.setItem(btoa('_sws'),btoa(JSON.stringify({p:prize.label,t:Date.now()})));
+  document.getElementById('btnGosok').addEventListener('click',startScratch);
+}
+
+function startScratch(){
+  if(scratching)return;
+  // retrieve & verify from session
+  try{
+    const raw=sessionStorage.getItem(btoa('_sws'));
+    if(raw){const d=JSON.parse(atob(raw));prize=PRIZES.find(p=>p.label===d.p)||prize;}
+  }catch(e){}
+
+  document.getElementById('btnGosok').disabled=true;
+  document.getElementById('status').textContent='🎰 Sedang menggosok...';
+
+  document.getElementById('prizeIcon').textContent=prize.icon;
+  document.getElementById('prizeText').textContent=prize.display;
+
+  animateScratch(()=>{
+    markPlayed();
+    document.getElementById('status').textContent='🎉 Selamat! Hadiah sudah terungkap!';
+    setTimeout(()=>showModal(prize),500);
+  });
+}
+
+function showAlreadyPlayed(){
+  document.getElementById('btnGosok').style.display='none';
+  document.getElementById('alreadyMsg').style.display='block';
+  document.getElementById('status').textContent='';
+}
+
+function showModal(pr){
+  document.getElementById('moji').textContent=pr.icon;
+  document.getElementById('mAmount').textContent=pr.display;
+  document.getElementById('btnClaim').href=CLAIM_URL;
+  document.getElementById('modal').classList.add('on');
+  spawnConfetti();
+}
+
+function spawnConfetti(){
+  const w=document.getElementById('cfWrap');w.innerHTML='';
+  const cols=['#ffd700','#ff6600','#ff3300','#ffaa00','#ff9900','#ffffff','#ffeeaa','#ff4400'];
+  for(let i=0;i<140;i++){
+    const c=document.createElement('div');c.className='cf';
+    const sz=Math.random()*10+5;
+    c.style.cssText=`left:${Math.random()*100}%;background:${cols[~~(Math.random()*cols.length)]};width:${sz}px;height:${sz}px;border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${Math.random()*.6}s;animation-duration:${Math.random()*2+2.5}s;`;
+    w.appendChild(c);setTimeout(()=>c.remove(),4200);
+  }
+}
+
+// particles bg
+(function(){
+  const w=document.getElementById('pts');
+  for(let i=0;i<25;i++){
+    const p=document.createElement('div');p.className='p';
+    const sz=Math.random()*4+2;
+    p.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;animation-delay:${Math.random()*5}s;animation-duration:${Math.random()*6+5}s;`;
+    w.appendChild(p);
+  }
+})();
+
+window.addEventListener('load',init);
+window.addEventListener('resize',setupCanvas);
+</script>
+</body>
+</html>
